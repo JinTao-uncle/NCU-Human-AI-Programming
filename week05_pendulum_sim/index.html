@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>单摆模拟器 — 赵金涛 5807126084</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a24;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    color: #aab;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    border-radius: 12px;
+  }
+  .info {
+    margin-top: 16px;
+    font-size: 13px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<canvas id="sim"></canvas>
+<div class="info">单摆模拟 · 赵金涛 · 5807126084 · 第5周</div>
+
+<script>
+// ===== 画布初始化 =====
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+canvas.width = 600;
+canvas.height = 500;
+
+// ===== 物理参数 =====
+const L = 200;          // 摆长 (px)
+const g = 9.8;          // 重力加速度
+const DAMPING = 0.999;  // 微弱阻尼，让摆动更真实
+const SCALE = 0.01;     // 像素→米换算系数（视觉调参）
+
+// 初始状态
+let theta = Math.PI / 4;  // 45度
+let omega = 0;            // 角速度
+
+// 支点坐标
+const pivotX = canvas.width / 2;
+const pivotY = 80;
+
+// ===== 物理更新（简谐近似 + 精确 sin） =====
+function update(dt) {
+  // 角加速度 α = -(g/L) * sin(θ)
+  const alpha = -(g / (L * SCALE)) * Math.sin(theta) * SCALE;
+  omega += alpha * dt;
+  omega *= DAMPING;
+  theta += omega * dt;
+}
+
+// ===== 绘制 =====
+function draw() {
+  // 清屏
+  ctx.fillStyle = '#1a1a24';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 摆球坐标
+  const bobX = pivotX + L * Math.sin(theta);
+  const bobY = pivotY + L * Math.cos(theta);
+
+  // --- 支点 ---
+  ctx.beginPath();
+  ctx.arc(pivotX, pivotY, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#556';
+  ctx.fill();
+
+  // --- 摆线 ---
+  ctx.beginPath();
+  ctx.moveTo(pivotX, pivotY);
+  ctx.lineTo(bobX, bobY);
+  ctx.strokeStyle = 'rgba(160,170,200,0.6)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // --- 摆球发光效果 ---
+  const glow = ctx.createRadialGradient(bobX, bobY, 2, bobX, bobY, 30);
+  glow.addColorStop(0, 'rgba(100,180,255,0.35)');
+  glow.addColorStop(1, 'rgba(100,180,255,0)');
+  ctx.beginPath();
+  ctx.arc(bobX, bobY, 30, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // --- 摆球本体 ---
+  const ballGrad = ctx.createRadialGradient(bobX - 4, bobY - 4, 2, bobX, bobY, 16);
+  ballGrad.addColorStop(0, '#a0d4ff');
+  ballGrad.addColorStop(0.6, '#4a9eff');
+  ballGrad.addColorStop(1, '#1a5aaa');
+  ctx.beginPath();
+  ctx.arc(bobX, bobY, 16, 0, Math.PI * 2);
+  ctx.fillStyle = ballGrad;
+  ctx.fill();
+
+  // --- 轨迹虚影 ---
+  ctx.beginPath();
+  ctx.arc(pivotX, pivotY, L, Math.PI / 2 - 0.8, Math.PI / 2 + 0.8);
+  ctx.strokeStyle = 'rgba(100,180,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// ===== 主循环 =====
+let lastTime = null;
+function loop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000; // 秒
+  lastTime = timestamp;
+
+  // 物理子步（提高稳定性）
+  const steps = 4;
+  for (let i = 0; i < steps; i++) {
+    update(dt / steps);
+  }
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
