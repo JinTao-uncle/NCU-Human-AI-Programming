@@ -125,7 +125,7 @@ canvas.height = 500;
 // ===== 物理参数（可变） =====
 let L = 200;          // 摆长 (px)
 let g = 9.8;          // 重力加速度
-let damping = 0.999;  // 阻尼系数（1 - sliderValue）
+let damping = 0.001;  // 阻尼系数（与滑块初始值一致）
 const SCALE = 0.01;   // 像素→米换算系数（视觉调参）
 const INITIAL_THETA = Math.PI / 4; // 初始角度 45°
 
@@ -216,6 +216,13 @@ function loop(timestamp) {
 
 requestAnimationFrame(loop);
 
+// ===== 重置函数（全局作用域，供按钮调用） =====
+function resetAnimation() {
+  theta = INITIAL_THETA;
+  omega = 0;
+  lastTime = null; // 重置时间基准，防止跳帧
+}
+
 // ===== 交互控制 =====
 const sliderL = document.getElementById('sliderL');
 const sliderG = document.getElementById('sliderG');
@@ -240,11 +247,7 @@ sliderD.addEventListener('input', function() {
   valD.textContent = damping.toFixed(3);
 });
 
-btnReset.addEventListener('click', function() {
-  theta = INITIAL_THETA;
-  omega = 0;
-  lastTime = null; // 重置时间基准，防止跳帧
-});
+btnReset.addEventListener('click', resetAnimation);
 </script>
 </body>
 </html>
