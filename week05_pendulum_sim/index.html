@@ -21,15 +21,98 @@
     border-radius: 12px;
   }
   .info {
-    margin-top: 16px;
+    margin-top: 10px;
     font-size: 13px;
     opacity: 0.5;
     letter-spacing: 1px;
+  }
+
+  /* ===== 控制面板 ===== */
+  .controls {
+    margin-top: 18px;
+    display: flex;
+    gap: 28px;
+    align-items: flex-end;
+  }
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .slider-group label {
+    font-size: 12px;
+    color: #8899bb;
+    letter-spacing: 0.5px;
+  }
+  .slider-group input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 140px;
+    height: 4px;
+    border-radius: 2px;
+    background: #2a2a3a;
+    outline: none;
+    cursor: pointer;
+  }
+  .slider-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #4a9eff;
+    box-shadow: 0 0 6px rgba(74,158,255,0.5);
+    cursor: pointer;
+  }
+  .slider-group .val {
+    font-size: 13px;
+    color: #6ac;
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: center;
+  }
+  .btn-reset {
+    padding: 7px 18px;
+    border: 1px solid rgba(74,158,255,0.35);
+    border-radius: 6px;
+    background: rgba(74,158,255,0.08);
+    color: #6ac;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover {
+    background: rgba(74,158,255,0.18);
+    border-color: rgba(74,158,255,0.6);
+    box-shadow: 0 0 10px rgba(74,158,255,0.15);
   }
 </style>
 </head>
 <body>
 <canvas id="sim"></canvas>
+
+<!-- ===== 参数控制面板 ===== -->
+<div class="controls">
+  <div class="slider-group">
+    <label>摆长 (px)</label>
+    <input type="range" id="sliderL" min="100" max="350" value="200" step="1">
+    <span class="val" id="valL">200</span>
+  </div>
+  <div class="slider-group">
+    <label>重力 (m/s²)</label>
+    <input type="range" id="sliderG" min="1" max="25" value="9.8" step="0.1">
+    <span class="val" id="valG">9.8</span>
+  </div>
+  <div class="slider-group">
+    <label>阻尼</label>
+    <input type="range" id="sliderD" min="0" max="0.010" value="0.001" step="0.001">
+    <span class="val" id="valD">0.001</span>
+  </div>
+  <button class="btn-reset" id="btnReset">重置摆动</button>
+</div>
+
 <div class="info">单摆模拟 · 赵金涛 · 5807126084 · 第5周</div>
 
 <script>
@@ -39,14 +122,15 @@ const ctx = canvas.getContext('2d');
 canvas.width = 600;
 canvas.height = 500;
 
-// ===== 物理参数 =====
-const L = 200;          // 摆长 (px)
-const g = 9.8;          // 重力加速度
-const DAMPING = 0.999;  // 微弱阻尼，让摆动更真实
-const SCALE = 0.01;     // 像素→米换算系数（视觉调参）
+// ===== 物理参数（可变） =====
+let L = 200;          // 摆长 (px)
+let g = 9.8;          // 重力加速度
+let damping = 0.999;  // 阻尼系数（1 - sliderValue）
+const SCALE = 0.01;   // 像素→米换算系数（视觉调参）
+const INITIAL_THETA = Math.PI / 4; // 初始角度 45°
 
 // 初始状态
-let theta = Math.PI / 4;  // 45度
+let theta = INITIAL_THETA;
 let omega = 0;            // 角速度
 
 // 支点坐标
@@ -58,7 +142,7 @@ function update(dt) {
   // 角加速度 α = -(g/L) * sin(θ)
   const alpha = -(g / (L * SCALE)) * Math.sin(theta) * SCALE;
   omega += alpha * dt;
-  omega *= DAMPING;
+  omega *= (1 - damping);
   theta += omega * dt;
 }
 
@@ -131,6 +215,36 @@ function loop(timestamp) {
 }
 
 requestAnimationFrame(loop);
+
+// ===== 交互控制 =====
+const sliderL = document.getElementById('sliderL');
+const sliderG = document.getElementById('sliderG');
+const sliderD = document.getElementById('sliderD');
+const valL = document.getElementById('valL');
+const valG = document.getElementById('valG');
+const valD = document.getElementById('valD');
+const btnReset = document.getElementById('btnReset');
+
+sliderL.addEventListener('input', function() {
+  L = Number(this.value);
+  valL.textContent = L;
+});
+
+sliderG.addEventListener('input', function() {
+  g = Number(this.value);
+  valG.textContent = g;
+});
+
+sliderD.addEventListener('input', function() {
+  damping = Number(this.value);
+  valD.textContent = damping.toFixed(3);
+});
+
+btnReset.addEventListener('click', function() {
+  theta = INITIAL_THETA;
+  omega = 0;
+  lastTime = null; // 重置时间基准，防止跳帧
+});
 </script>
 </body>
 </html>
